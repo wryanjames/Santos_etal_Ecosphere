@@ -18,5 +18,26 @@ BBpinfish.csv - File containing raw data of pinfish
   - Epiphytes - epiphytic algae mixing model estimated source contribution
   - Seagrass - seagrass mixing model estimated source contribution
   - TL - calculated trophic level based on mixing model results 
+
+sz1.csv - source isotope values for zone 1 (high and stable salinity)
+  - Species - ID of source
+  - Zone - Salinity zone (zone 1 = High/Stable, zone 2 = Low/Variable) 
+  - Meand13C - mean d13C source stable isotope value
+  - Meand15N - mean d15N source stable isotope value
+  - Concd13C - mean percentage of carbon concentation in source
+  - Concd15N - mean percentage of nitrogen concentation in source
+  - SDd13C - standard deviation of d13C values
+  - SDd15N - standard deviation of d15N values
+  
+sz2.csv - source isotope values for zone 2 (low and variable salinity)
+  - Species - ID of source
+  - Zone - Salinity zone (zone 1 = High/Stable, zone 2 = Low/Variable) 
+  - Meand13C - mean d13C source stable isotope value
+  - Meand15N - mean d15N source stable isotope value
+  - Concd13C - mean percentage of carbon concentation in source
+  - Concd15N - mean percentage of nitrogen concentation in source
+  - SDd13C - standard deviation of d13C values
+  - SDd15N - standard deviation of d15N values
+  
   
 pinBB_hypervolumes.R - script used for hypervolume analysis of pinfish

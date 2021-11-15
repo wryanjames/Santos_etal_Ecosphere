@@ -43,39 +43,15 @@ library(MixSIAR)
 
 ######################Data###########################33
 
-setwd("E:/Datasheets_Dissertation/Fish/Isotope_lipid_gut/Isotope_lipid_gut/2018")
-# setwd("C:/Isotope_lipid_gut/2018")
+
 
 ###
 #Pinfish mixing models results done by zone
 ###
-pin.mix<-read.csv("pinmixresults_byZone_072019.csv")
+pin.mix<-read.csv("BBpinfish.csv")
 
-###
-#SIA results
-###
-pin.sia <-read.csv("pinfish_SIA1.csv", stringsAsFactors = FALSE)
-colnames(pin.sia)[4:5] <-c("d13C", "d15N")
-pin.sia <- tibble::rowid_to_column(pin.sia, "ID")
-
-pinz1<-subset(pin.sia, Zone %in% c("Zone1"))
-pinz2<-subset(pin.sia, Zone %in% c("Zone2"))
-
-###
-#Joining SIA results & mixing models
-###
-mix_all = merge(pin.mix, pin.sia, by = "ID", all.x = TRUE)
-# write.csv(mix_all, "mix_all.csv")
-
-mix.all.x = subset(mix_all, select = c("ID", "Source", "Site.x", "Site.y","Mean", "d15N", 
-                                       "Seascape"))
-
-mix.all.l = spread(mix.all.x, Source, Mean)
-names(mix.all.l)[6] <- "Benthic.Algae"
-# write.csv(mix.all.l, "mix.all.l.csv")
-
-mix.z1 = subset(mix.all.l, Site.x == "Zone 1")
-mix.z2 = subset(mix.all.l, Site.x == "Zone 2")
+mix.z1 = subset(pin.mix, Zone == "Zone 1")
+mix.z2 = subset(pin.mix, Zone == "Zone 2")
 
 ###
 #Source data by zone
@@ -89,54 +65,22 @@ source_z2 = read.csv("sz2.csv")
 
 #################Data Processing/Preparation#################################
 
-# calculate trophic level----
-# d15N value for each source
-
-###
-#AVerage nitrogen values from the mixing model datasets
-###
-algae_z1 = source_z1$Meand15N[1]
-drift_z1 = source_z1$Meand15N[2]
-sg_z1 = source_z1$Meand15N[3]
-epi_z1 = source_z1$Meand15N[4] 
-
-algae_z2 = source_z2$Meand15N[1]
-drift_z2 = source_z2$Meand15N[2]
-sg_z2 = source_z2$Meand15N[3]
-epi_z2 = source_z2$Meand15N[4] 
-
-###
-# trophic fractionation factor of N
-###
-dN = 2.9
-
-###
-# calculate trophic level
-###
-mix.z1$tl = ((mix.z1$d15N-(mix.z1$Benthic.Algae*algae_z1 + mix.z1$Epiphytes*epi_z1 + mix.z1$Seagrass*sg_z1 + mix.z1$Drift*drift_z1))/dN) + 1
-mix.z2$tl = ((mix.z2$d15N-(mix.z2$Benthic.Algae*algae_z2 + mix.z2$Epiphytes*epi_z2 + mix.z2$Seagrass*sg_z2 + mix.z2$Drift*drift_z2))/dN) + 1
-
-
-###
 # calculate z scores----
 ###
 
 #Zone 1
-mix.z1$zBenthic.Algae = (mix.z1$Benthic.Algae - mean(mix.z1$Benthic.Algae))/sd(mix.z1$Benthic.Algae)
+mix.z1$zBenthic.Algae = (mix.z1$Benthic.algae - mean(mix.z1$Benthic.algae))/sd(mix.z1$Benthic.algae)
 mix.z1$zEpiphytes = (mix.z1$Epiphytes - mean(mix.z1$Epiphytes))/sd(mix.z1$Epiphytes)
 mix.z1$zSeagrass = (mix.z1$Seagrass - mean(mix.z1$Seagrass))/sd(mix.z1$Seagrass)
 mix.z1$zDrift = (mix.z1$Drift - mean(mix.z1$Drift))/sd(mix.z1$Drift)
-mix.z1$zTL = (mix.z1$tl - mean(mix.z1$tl))/sd(mix.z1$tl)
+mix.z1$zTL = (mix.z1$TL - mean(mix.z1$TL))/sd(mix.z1$TL)
 
 #Zone 2
-mix.z2$zBenthic.Algae = (mix.z2$Benthic.Algae - mean(mix.z2$Benthic.Algae))/sd(mix.z2$Benthic.Algae)
+mix.z2$zBenthic.Algae = (mix.z2$Benthic.algae - mean(mix.z2$Benthic.algae))/sd(mix.z2$Benthic.algae)
 mix.z2$zEpiphytes = (mix.z2$Epiphytes - mean(mix.z2$Epiphytes))/sd(mix.z2$Epiphytes)
 mix.z2$zSeagrass = (mix.z2$Seagrass - mean(mix.z2$Seagrass))/sd(mix.z2$Seagrass)
 mix.z2$zDrift = (mix.z2$Drift - mean(mix.z2$Drift))/sd(mix.z2$Drift)
-mix.z2$zTL = (mix.z2$tl - mean(mix.z2$tl))/sd(mix.z2$tl)
-
-# mix.all.l2 <- bind_rows(mix.z1, mix.z2)
-# write.csv(mix.all.l2, "mix.all.l2.csv")
+mix.z2$zTL = (mix.z2$TL - mean(mix.z2$TL))/sd(mix.z2$TL)
 
 #########################################################################################################################
 
@@ -150,20 +94,20 @@ library(hypervolume)
 #use this to subset per site to calculate hypervolume site specific
 
 #Zone 1
-pin.s48 <- filter(mix.z1, Site.y == 48)%>%dplyr::select(.,zBenthic.Algae, zEpiphytes, zSeagrass, zDrift, zTL)
-pin.s94 <- filter(mix.z1, Site.y == 94)%>%dplyr::select(.,zBenthic.Algae, zEpiphytes, zSeagrass, zDrift, zTL)
-pin.s80 <- filter(mix.z1, Site.y == 80)%>%dplyr::select(.,zBenthic.Algae, zEpiphytes, zSeagrass, zDrift, zTL)
-pin.s64 <- filter(mix.z1, Site.y == 64)%>%dplyr::select(.,zBenthic.Algae, zEpiphytes, zSeagrass, zDrift, zTL)
-pin.s74 <- filter(mix.z1, Site.y == 74)%>%dplyr::select(.,zBenthic.Algae, zEpiphytes, zSeagrass, zDrift, zTL)
-pin.s78 <- filter(mix.z1, Site.y == 78)%>%dplyr::select(.,zBenthic.Algae, zEpiphytes, zSeagrass, zDrift, zTL)
+pin.s48 <- filter(mix.z1, Site == 48)%>%dplyr::select(.,zBenthic.Algae, zEpiphytes, zSeagrass, zDrift, zTL)
+pin.s94 <- filter(mix.z1, Site == 94)%>%dplyr::select(.,zBenthic.Algae, zEpiphytes, zSeagrass, zDrift, zTL)
+pin.s80 <- filter(mix.z1, Site == 80)%>%dplyr::select(.,zBenthic.Algae, zEpiphytes, zSeagrass, zDrift, zTL)
+pin.s64 <- filter(mix.z1, Site == 64)%>%dplyr::select(.,zBenthic.Algae, zEpiphytes, zSeagrass, zDrift, zTL)
+pin.s74 <- filter(mix.z1, Site == 74)%>%dplyr::select(.,zBenthic.Algae, zEpiphytes, zSeagrass, zDrift, zTL)
+pin.s78 <- filter(mix.z1, Site == 78)%>%dplyr::select(.,zBenthic.Algae, zEpiphytes, zSeagrass, zDrift, zTL)
 
 #Zone 2
-pin.s12 <- filter(mix.z2, Site.y == 12)%>%dplyr::select(.,zBenthic.Algae, zEpiphytes, zSeagrass, zDrift, zTL)
-pin.s23 <- filter(mix.z2, Site.y == 23)%>%dplyr::select(.,zBenthic.Algae, zEpiphytes, zSeagrass, zDrift, zTL)
-pin.s07 <- filter(mix.z2, Site.y == 07)%>%dplyr::select(.,zBenthic.Algae, zEpiphytes, zSeagrass, zDrift, zTL)
-pin.s18 <- filter(mix.z2, Site.y == 18)%>%dplyr::select(.,zBenthic.Algae, zEpiphytes, zSeagrass, zDrift, zTL)
-pin.s13 <- filter(mix.z2, Site.y == 13)%>%dplyr::select(.,zBenthic.Algae, zEpiphytes, zSeagrass, zDrift, zTL)
-pin.s02 <- filter(mix.z2, Site.y == 02)%>%dplyr::select(.,zBenthic.Algae, zEpiphytes, zSeagrass, zDrift, zTL)
+pin.s12 <- filter(mix.z2, Site == 12)%>%dplyr::select(.,zBenthic.Algae, zEpiphytes, zSeagrass, zDrift, zTL)
+pin.s23 <- filter(mix.z2, Site == 23)%>%dplyr::select(.,zBenthic.Algae, zEpiphytes, zSeagrass, zDrift, zTL)
+pin.s07 <- filter(mix.z2, Site == 07)%>%dplyr::select(.,zBenthic.Algae, zEpiphytes, zSeagrass, zDrift, zTL)
+pin.s18 <- filter(mix.z2, Site == 18)%>%dplyr::select(.,zBenthic.Algae, zEpiphytes, zSeagrass, zDrift, zTL)
+pin.s13 <- filter(mix.z2, Site == 13)%>%dplyr::select(.,zBenthic.Algae, zEpiphytes, zSeagrass, zDrift, zTL)
+pin.s02 <- filter(mix.z2, Site == 02)%>%dplyr::select(.,zBenthic.Algae, zEpiphytes, zSeagrass, zDrift, zTL)
 
 # function to bootstrap hypervolumes to generate confidence intervals----
 # makes "count" number of hvs by resampling number of points 
@@ -233,7 +177,7 @@ pin.s48h = hypervolume_gaussian(pin.s48, name = 'Pinfish Site 48',
 # get volume
 get_volume(pin.s48h)
 
-# # generate 1000 bootstrapped hvs with 2/3 of data - I changed this to 9/10 due the sample size (N = 10) per site
+# # generate 1000 bootstrapped hvs with 9/10 of data - I changed this to 9/10 due the sample size (N = 10) per site
 # pin.s48fish = makerand(pin.s48,1000, (9/10))
 # pin.s48fish$cat = "Pinfish Site 48"
 # 
@@ -280,7 +224,7 @@ pin.s94h = hypervolume_gaussian(pin.s94, name = 'Pinfish Site 94',
 # get volume
 get_volume(pin.s94h)
 
-# # generate 1000 bootstrapped hvs with 2/3 of data
+# # generate 1000 bootstrapped hvs with 9/10 of data
 # pin.s94fish = makerand(pin.s94,1000, (9/10))
 # pin.s94fish$cat = "Pinfish Site 94"
 # 
@@ -328,7 +272,7 @@ pin.s80h = hypervolume_gaussian(pin.s80, name = 'Pinfish Site 80',
 # get volume
 get_volume(pin.s80h)
 
-# # generate 1000 bootstrapped hvs with 2/3 of data
+# # generate 1000 bootstrapped hvs with 9/10 of data
 # pin.s80fish = makerand(pin.s80,1000, (9/10))
 # pin.s80fish$cat = "Pinfish Site 80"
 # 
@@ -375,7 +319,7 @@ pin.s64h = hypervolume_gaussian(pin.s64, name = 'Pinfish Site 64',
 # get volume
 get_volume(pin.s64h)
 
-# # generate 1000 bootstrapped hvs with 2/3 of data
+# # generate 1000 bootstrapped hvs with 9/10 of data
 # pin.s64fish = makerand(pin.s64,1000, (9/10))
 # pin.s64fish$cat = "Pinfish Site 64"
 # 
@@ -421,7 +365,7 @@ pin.s74h = hypervolume_gaussian(pin.s74, name = 'Pinfish Site 74',
 # get volume
 get_volume(pin.s74h)
 # 
-# # generate 1000 bootstrapped hvs with 2/3 of data
+# # generate 1000 bootstrapped hvs with 9/10 of data
 # pin.s74fish = makerand(pin.s74,1000, (9/10))
 # pin.s74fish$cat = "Pinfish Site 74"
 # 
@@ -468,7 +412,7 @@ pin.s78h = hypervolume_gaussian(pin.s78, name = 'Pinfish Site 78',
 # get volume
 get_volume(pin.s78h)
 
-# # generate 1000 bootstrapped hvs with 2/3 of data
+# # generate 1000 bootstrapped hvs with 9/10 of data
 # pin.s78fish = makerand(pin.s78,1000, (9/10))
 # pin.s78fish$cat = "Pinfish Site 78"
 # 
@@ -518,42 +462,42 @@ pin.vol.z1$Zone <- c("Zone 1")
 #Bootstrapped hvs Zone 1 -----
 
 
-# generate 1000 bootstrapped hvs with 2/3 of data - I changed this to 9/10 due the sample size (N = 10) per site
+# generate 1000 bootstrapped hvs with 9/10 of data - I changed this to 9/10 due the sample size (N = 10) per site
 pin.s48fish = makerand(pin.s48,1000, (9/10))
 pin.s48fish$cat = "Pinfish Site 48"
 
 # calculate 95% confidence intervals from bootstraped hvs
 pin.s48conf = hvconfint(pin.s48fish, 95, "Pinfish Site 48")
 
-# generate 1000 bootstrapped hvs with 2/3 of data
+# generate 1000 bootstrapped hvs with 9/10 of data
 pin.s80fish = makerand(pin.s80,1000, (9/10))
 pin.s80fish$cat = "Pinfish Site 80"
 
 # calculate 95% confidence intervals from bootstraped hvs
 pin.s80conf = hvconfint(pin.s80fish, 95, "Pinfish Site 80")
 
-# generate 1000 bootstrapped hvs with 2/3 of data
+# generate 1000 bootstrapped hvs with 9/10 of data
 pin.s94fish = makerand(pin.s94,1000, (9/10))
 pin.s94fish$cat = "Pinfish Site 94"
 
 # calculate 95% confidence intervals from bootstraped hvs
 pin.s94conf = hvconfint(pin.s94fish, 95, "Pinfish Site 94")
 
-# generate 1000 bootstrapped hvs with 2/3 of data
+# generate 1000 bootstrapped hvs with 9/10 of data
 pin.s64fish = makerand(pin.s64,1000, (9/10))
 pin.s64fish$cat = "Pinfish Site 64"
 
 # calculate 95% confidence intervals from bootstraped hvs
 pin.s64conf = hvconfint(pin.s64fish, 95, "Pinfish Site 64")
 
-# generate 1000 bootstrapped hvs with 2/3 of data
+# generate 1000 bootstrapped hvs with 9/10 of data
 pin.s74fish = makerand(pin.s74,1000, (9/10))
 pin.s74fish$cat = "Pinfish Site 74"
 
 # calculate 95% confidence intervals from bootstraped hvs
 pin.s74conf = hvconfint(pin.s74fish, 95, "Pinfish Site 74")
 
-# generate 1000 bootstrapped hvs with 2/3 of data
+# generate 1000 bootstrapped hvs with 9/10 of data
 pin.s78fish = makerand(pin.s78,1000, (9/10))
 pin.s78fish$cat = "Pinfish Site 78"
 
@@ -578,7 +522,7 @@ pin.s12h = hypervolume_gaussian(pin.s12, name = 'Pinfish Site 12',
 # get volume
 get_volume(pin.s12h)
 
-# # generate 1000 bootstrapped hvs with 2/3 of data
+# # generate 1000 bootstrapped hvs with 9/10 of data
 # pin.s12fish = makerand(pin.s12,1000, (9/10))
 # pin.s12fish$cat = "Pinfish Site 12"
 # 
@@ -625,7 +569,7 @@ pin.s23h = hypervolume_gaussian(pin.s23, name = 'Pinfish Site 23',
 # get volume
 get_volume(pin.s23h)
 
-# generate 1000 bootstrapped hvs with 2/3 of data
+# generate 1000 bootstrapped hvs with 9/10 of data
 # pin.s23fish = makerand(pin.s23,1000, (9/10))
 # pin.s23fish$cat = "Pinfish Site 23"
 # 
@@ -673,7 +617,7 @@ pin.s07h = hypervolume_gaussian(pin.s07, name = 'Pinfish Site 07',
 # get volume
 get_volume(pin.s07h)
 
-# # generate 1000 bootstrapped hvs with 2/3 of data
+# # generate 1000 bootstrapped hvs with 9/10 of data
 # pin.s07fish = makerand(pin.s07,1000, (9/10))
 # pin.s07fish$cat = "Pinfish Site 07"
 # 
@@ -720,7 +664,7 @@ pin.s18h = hypervolume_gaussian(pin.s18, name = 'Pinfish Site 18',
 # get volume
 get_volume(pin.s18h)
 
-# # generate 1000 bootstrapped hvs with 2/3 of data
+# # generate 1000 bootstrapped hvs with 9/10 of data
 # pin.s18fish = makerand(pin.s18,1000, (9/10))
 # pin.s18fish$cat = "Pinfish Site 18"
 # 
@@ -766,7 +710,7 @@ pin.s13h = hypervolume_gaussian(pin.s13, name = 'Pinfish Site 13',
 # get volume
 get_volume(pin.s13h)
 
-# # generate 1000 bootstrapped hvs with 2/3 of data
+# # generate 1000 bootstrapped hvs with 9/10 of data
 # pin.s13fish = makerand(pin.s13,1000, (9/10))
 # pin.s13fish$cat = "Pinfish Site 13"
 # 
@@ -813,7 +757,7 @@ pin.s02h = hypervolume_gaussian(pin.s02, name = 'Pinfish Site 02',
 # get volume
 get_volume(pin.s02h)
 
-# # generate 1000 bootstrapped hvs with 2/3 of data
+# # generate 1000 bootstrapped hvs with 9/10 of data
 # pin.s02fish = makerand(pin.s02,1000, (9/10))
 # pin.s02fish$cat = "Pinfish Site 02"
 # 
@@ -869,42 +813,42 @@ write.csv(pin.vol.all, "pin.vol.all.csv")
 ###
 #Bootstrapped hvs Zone 2 -----
 
-# generate 1000 bootstrapped hvs with 2/3 of data - I changed this to 9/10 due the sample size (N = 10) per site
+# generate 1000 bootstrapped hvs with 9/10 of data - I changed this to 9/10 due the sample size (N = 10) per site
 pin.s12fish = makerand(pin.s12,1000, (9/10))
 pin.s12fish$cat = "Pinfish Site 12"
 
 # calculate 95% confidence intervals from bootstraped hvs
 pin.s12conf = hvconfint(pin.s12fish, 95, "Pinfish Site 12")
 
-# generate 1000 bootstrapped hvs with 2/3 of data
+# generate 1000 bootstrapped hvs with 9/10 of data
 pin.s23fish = makerand(pin.s23,1000, (9/10))
 pin.s23fish$cat = "Pinfish Site 23"
 
 # calculate 95% confidence intervals from bootstraped hvs
 pin.s23conf = hvconfint(pin.s23fish, 95, "Pinfish Site 23")
 
-# generate 1000 bootstrapped hvs with 2/3 of data
+# generate 1000 bootstrapped hvs with 9/10 of data
 pin.s07fish = makerand(pin.s07,1000, (9/10))
 pin.s07fish$cat = "Pinfish Site 07"
 
 # calculate 95% confidence intervals from bootstraped hvs
 pin.s07conf = hvconfint(pin.s07fish, 95, "Pinfish Site 07")
 
-# generate 1000 bootstrapped hvs with 2/3 of data
+# generate 1000 bootstrapped hvs with 9/10 of data
 pin.s18fish = makerand(pin.s18,1000, (9/10))
 pin.s18fish$cat = "Pinfish Site 18"
 
 # calculate 95% confidence intervals from bootstraped hvs
 pin.s18conf = hvconfint(pin.s18fish, 95, "Pinfish Site 18")
 
-# generate 1000 bootstrapped hvs with 2/3 of data
+# generate 1000 bootstrapped hvs with 9/10 of data
 pin.s13fish = makerand(pin.s13,1000, (9/10))
 pin.s13fish$cat = "Pinfish Site 13"
 
 # calculate 95% confidence intervals from bootstraped hvs
 pin.s13conf = hvconfint(pin.s13fish, 95, "Pinfish Site 13")
 
-# generate 1000 bootstrapped hvs with 2/3 of data
+# generate 1000 bootstrapped hvs with 9/10 of data
 pin.s02fish = makerand(pin.s02,1000, (9/10))
 pin.s02fish$cat = "Pinfish Site 02"
 
@@ -922,19 +866,19 @@ pin.s02conf = hvconfint(pin.s02fish, 95, "Pinfish Site 02")
 #Prepare data to create general hypervolume - per zone, and per zone|seascape---------
 ###
 
-zone.1 <- filter(mix.z1, Site.x %in% c("Zone 1"))%>%dplyr::select(.,zBenthic.Algae, zEpiphytes, zSeagrass, zDrift, zTL)
-zone.2 <- filter(mix.z2, Site.x %in% c("Zone 2"))%>%dplyr::select(.,zBenthic.Algae, zEpiphytes, zSeagrass, zDrift, zTL)
+zone.1 <- filter(mix.z1, Zone %in% c("Zone 1"))%>%dplyr::select(.,zBenthic.Algae, zEpiphytes, zSeagrass, zDrift, zTL)
+zone.2 <- filter(mix.z2, Zone %in% c("Zone 2"))%>%dplyr::select(.,zBenthic.Algae, zEpiphytes, zSeagrass, zDrift, zTL)
 
-zone.1.c <- filter(mix.z1, Site.x %in% c("Zone 1") & Site.y %in% c(94, 80, 48))%>%
+zone.1.c <- filter(mix.z1, Zone %in% c("Zone 1") & Site.y %in% c(94, 80, 48))%>%
   dplyr::select(.,zBenthic.Algae, zEpiphytes, zSeagrass, zDrift, zTL)
 
-zone.1.f <- filter(mix.z1, Site.x %in% c("Zone 1") & Site.y %in% c(64, 74, 78))%>%
+zone.1.f <- filter(mix.z1, Zone %in% c("Zone 1") & Site.y %in% c(64, 74, 78))%>%
   dplyr::select(.,zBenthic.Algae, zEpiphytes, zSeagrass, zDrift, zTL)
 
-zone.2.c <- filter(mix.z2, Site.x %in% c("Zone 2") & Site.y %in% c(23, 12, 7))%>%
+zone.2.c <- filter(mix.z2, Zone %in% c("Zone 2") & Site.y %in% c(23, 12, 7))%>%
   dplyr::select(.,zBenthic.Algae, zEpiphytes, zSeagrass, zDrift, zTL)
 
-zone.2.f <- filter(mix.z2, Site.x %in% c("Zone 2") & Site.y %in% c(18, 13, 2))%>%
+zone.2.f <- filter(mix.z2, Zone %in% c("Zone 2") & Site.y %in% c(18, 13, 2))%>%
   dplyr::select(.,zBenthic.Algae, zEpiphytes, zSeagrass, zDrift, zTL)
 
 ###
