@@ -1,4 +1,5 @@
 # Santos_etal_Ecosphere
+[![DOI](https://zenodo.org/badge/428325942.svg)](https://zenodo.org/badge/latestdoi/428325942)
 
 This repository contains the data and code that was used in Santos et al. (2021). 
 
